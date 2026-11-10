@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/modengsir/VideoGate/blob/main/schemas/review-result.schema.json",
+  "title": "VideoGate preflight review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "gate", "input_version", "reviewer", "capabilities", "checks", "decision", "ready_for_next_stage", "human_approval_required", "limitations"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "gate": {"enum": ["GATE_1", "GATE_2"]},
+    "input_version": {"type": "string", "minLength": 1},
+    "reviewer": {"type": "string", "minLength": 1},
+    "capabilities": {"type": "object", "additionalProperties": false, "required": ["text", "vision"], "properties": {"text": {"type": "boolean"}, "vision": {"type": "boolean"}}},
+    "checks": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"type": "object", "additionalProperties": false, "required": ["rule_id", "status", "severity", "location", "evidence", "minimal_fix"], "properties": {
+      "rule_id": {"pattern": "^G[12]-0[1-8]$", "type": "string"},
+      "status": {"enum": ["PASS", "FAIL", "UNVERIFIED"]},
+      "severity": {"type": ["string", "null"], "enum": ["P0", "P1", "P2", null]},
+      "location": {"type": "string"}, "evidence": {"type": "string"}, "minimal_fix": {"type": "string"}
+    }}},
+    "decision": {"enum": ["BLOCKED", "READY_WITH_NOTES", "READY"]},
+    "ready_for_next_stage": {"type": "boolean"},
+    "human_approval_required": {"const": true},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "allOf": [
+    {"if": {"properties": {"decision": {"const": "BLOCKED"}}}, "then": {"properties": {"ready_for_next_stage": {"const": false}}}},
+    {"if": {"properties": {"gate": {"const": "GATE_1"}}}, "then": {"properties": {"checks": {"items": {"properties": {"rule_id": {"pattern": "^G1-0[1-8]$"}}}}}}},
+    {"if": {"properties": {"gate": {"const": "GATE_2"}}}, "then": {"properties": {"checks": {"items": {"properties": {"rule_id": {"pattern": "^G2-0[1-8]$"}}}}}}}
+  ],
+  "$comment": "Use scripts/validate_report.py for additional cross-field logic and ordered ID checks not expressible here without verbose schema."
+}
